@@ -1,6 +1,8 @@
 library(tidyverse)
 library(gtsummary)
 
+library(broom.helpers)
+
 # load and clean data
 nlsy_cols <- c(
   "glasses", "eyesight", "sleep_wkdy", "sleep_wknd",
@@ -130,5 +132,129 @@ tbl_int <- tbl_regression(
 tbl_merge(list(tbl_no_int, tbl_int),
   tab_spanner = c("**Model 1**", "**Model 2**")
 )
+----------------------------------------------------------------
+# exercise
+# #step 1 new variables and predictors
+# Each of the univariate regression
+# examples held the outcome (y =) constant, while varying the predictor
+# variables with include =. You can also look at one predictor across several
+# outcomes. Create a univariate regression table looking at the association
+# between sex (sex_cat) as the x = variable and each of nsibs, sleep_wkdy, and
+# sleep_wknd, and income. Hint: You can use almost the same code as the
+# univariate regression table examples from the code. Did we need to fit the
+# regressions ahead of time for that?
+tbl_uvregression(
+	nlsy,
+	x = sex_cat,
+	include = c(nsibs, sleep_wkdy, sleep_wknd, income),
+	method = lm
+)
+
+#step2
+# 4. Fit a Poisson regression (family = poisson()) for the number of siblings,
+# using at least 3 predictors of your choice. Create a nice table displaying
+# your Poisson regression and its exponentiated coefficients. Hint: You can use
+# almost the same code (two parts!) we used for the logistic regression table in
+# the code.
+poisson_model <- glm(nsibs ~ eyesight_cat + sex_cat + income,
+											data = nlsy, family = poisson()
+)
+
+tbl_regression(
+	poisson_model,
+	exponentiate = TRUE,
+	label = list(
+		sex_cat ~ "Sex",
+		eyesight_cat ~ "Eyesight",
+		income ~ "Income (USD)"
+	)
+)
+
+#step 3
+#Instead of odds ratios for wearing glasses, as in the example in the
+# slides., we want risk ratios. We can do this by specifying in the regression
+# family = binomial(link = "log"). Regress glasses on eyesight_cat and sex_cat
+# and create a table showing the risk ratios and confidence intervals from this
+# regression.
+
+logbinomial_model <- glm(glasses ~ eyesight_cat + sex_cat,
+										 data = nlsy, family = binomial(link = "log")
+)
+
+logbinomial_table <- tbl_regression(
+	logbinomial_model,
+	exponentiate = TRUE,
+	label = list(
+		sex_cat ~ "Sex",
+		eyesight_cat ~ "Eyesight"
+	)
+)
 
 
+#Make a table comparing the logistic and the log-binomial results.
+
+logistic_model <- glm(glasses ~ eyesight_cat + sex_cat,
+											data = nlsy, family = binomial()
+)
+
+logistic_table <- tbl_regression(
+	logistic_model,
+	exponentiate = TRUE,
+	label = list(
+		sex_cat ~ "Sex",
+		eyesight_cat ~ "Eyesight"
+	)
+)
+
+logbinomial_model <- glm(glasses ~ eyesight_cat + sex_cat,
+												 data = nlsy, family = binomial(link = "log")
+)
+
+logbinomial_table <- tbl_regression(
+	logbinomial_model,
+	exponentiate = TRUE,
+	label = list(
+		sex_cat ~ "Sex",
+		eyesight_cat ~ "Eyesight"
+	)
+)
+
+tbl_merge(list(logistic_table, logbinomial_table),
+					tab_spanner = c("**Model 1**", "**Model 2**")
+)
+
+
+
+#bonus
+# Bonus: Since family = binomial(link = "log") often doesn’t converge, we often
+# use Poisson regression with robust standard errors to estimate risk ratios.
+# Fit a Poisson regression instead of the log-binomial regression for question
+# 6. Then create a table using tidy_fun = partial(tidy_robust, vcov = "HC1"). It
+# will prompt you to install new package(s) (yes!). See this page for more on
+# custom tidiers.
+logpoisson_model <- glm(glasses ~ eyesight_cat, )
+
+tidy_fun = partial(tidy_robust, vcov = "HC1").
+
+logpoisson_model_robust <-
+
+
+# exploration
+
+# 1.{modelsummary}: a package that can create tables from model objects, and
+# works with a lot of formats
+
+# 2.{sjPlot}: has a function to create tables from
+# model objects (along with visualization tools)
+
+# 3.{gt}: html table package that {gtsummary} uses under the hood
+
+# 4.{kableExtra}: great for html tables, but also helpful for LaTeX pdfs
+
+# 5.{flextable}: great for Word (and Powerpoint!) tables,but also works with other formats
+
+# 6.{huxtable}:another package for Word and LaTeX tables, but also works with html
+
+library(huxtable)
+
+huxtable::set_top_padding()
