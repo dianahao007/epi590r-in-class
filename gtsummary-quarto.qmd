@@ -1,0 +1,154 @@
+---
+title: "gtsummary in quarto"
+format:
+  html:
+    theme: darkly
+execute:
+  echo: true
+  eval: true
+  message: true
+  error: true 
+---
+
+```{r}
+library(tidyverse)
+library(gtsummary)
+nlsy_cols <- c("glasses", "eyesight", "sleep_wkdy", "sleep_wknd",
+               "id", "nsibs", "samp", "race_eth", "sex", "region",
+               "income", "res_1980", "res_2002", "age_bir")
+nlsy <- read_csv(here::here("data", "raw", "nlsy.csv"),
+                 na = c("-1", "-2", "-3", "-4", "-5", "-998"),
+                 skip = 1, col_names = nlsy_cols) |>
+  mutate(region_cat = factor(region, labels = c("Northeast", "North Central", "South", "West")),
+         sex_cat = factor(sex, labels = c("Male", "Female")),
+         race_eth_cat = factor(race_eth, labels = c("Hispanic", "Black", "Non-Black, Non-Hispanic")),
+         eyesight_cat = factor(eyesight, labels = c("Excellent", "Very good", "Good", "Fair", "Poor")),
+         glasses_cat = factor(glasses, labels = c("No", "Yes")))
+```
+
+# Customization of `tbl_summary()`
+
+```{r}
+tbl_summary(
+  nlsy,
+  by = sex_cat,
+  include = c(sex_cat, race_eth_cat, region_cat,
+              eyesight_cat, glasses, age_bir))
+```
+
+Characteristics of The National Longitudinal Survey of Youth 1997 (NLSY97) stratified by sex.
+
+```{r}
+#| label: tbl-one
+#| tbl-cap: "This is a table of a dataframe"
+tbl_summary(
+  nlsy,
+  by = sex_cat,
+  include = c(sex_cat, race_eth_cat, region_cat,
+              eyesight_cat, glasses, age_bir),
+  label = list(
+    race_eth_cat ~ "Race/ethnicity",
+    region_cat ~ "Region",
+    eyesight_cat ~ "Eyesight",
+    glasses ~ "Wears glasses",
+    age_bir ~ "Age at first birth"
+  ),
+  missing_text = "Missing")
+```
+
+Here is an example of error in code can be still rendered and show the massage.
+
+- bullet 1
+
+1.  example here
+
+```{r}
+#| label: fig-hist
+#| fig-cap: "This is a histogram"
+hist(rnorm(100))
+
+```
+
+123
+
+`r 7*8`
+
+@fig-hist contains a histogram and @tbl-one a table.
+
+`r scales::number(12868, big.mark = ",")`
+
+```{r}
+total_sample <- nrow(nlsy)
+
+# example:
+# stats <- list(n = nrow(data),
+# 							mean_age = mean(data$age))
+
+#intepretation:
+# There were `` `r stats$n` `` participants with a mean age of `` `r stats$mean_age` ``.
+```
+
+
+
+```{r}
+library(gtsummary)
+income_table <- tbl_uvregression(
+	nlsy,
+	y = income,
+	include = c(
+		sex_cat, race_eth_cat,
+		eyesight_cat, income, age_bir
+	),
+	method = lm
+)
+
+inline_text(income_table, variable = "age_bir")
+```
+
+```{r}
+
+#| label: tbl-descr
+#| tbl-cap: "Descriptive statistics"
+# igonore, it's for slides #| output-location: slide
+table1 <- tbl_summary(
+	nlsy,
+	by = sex_cat,
+	include = c(sex_cat, race_eth_cat, region_cat,
+							eyesight_cat, glasses, age_bir)) |>
+	add_overall(last = TRUE)
+table1
+
+```
+
+```{r exercise 1}
+tbl_summary(
+	NLSY,
+	by = sex_cat,
+	include = c(sex_cat, race_eth_cat, region_cat,
+							eyesight_cat, glasses, age_bir))
+```
+
+```{r exercise 2}
+#| label: tbl-two
+#| tbl-cap: "This is a table of dataframe comparing people wearing glasses or not"
+glass_table <- tbl_summary(
+	nlsy,
+	by = glasses_cat,
+	include = c(age_bir, race_eth_cat, sleep_wknd, region_cat),
+	label = list(age_bir ~ "Age", race_eth_cat ~ "Race/Ethnicity", sleep_wknd ~ "Sleep in Weekend", region_cat ~ "Region")
+)|>
+	add_overall(col_label = "**Total** N ={N}")
+
+#another way Q3
+median_weekend_sleep <- median(nlsy$sleep_wknd, na.rm = TRUE)
+median_weekend_sleep
+
+inline_text(glass_table, variable = "sleep_wknd", column = "stat_0", pattern="{median}")
+
+```
+
+@tbl-two shows the characteristics of people wear glasses vs people don't 
+
+The median of weekend sleep of the population is `r inline_text(glass_table, variable = "sleep_wknd", column = "stat_0", pattern="{median}")`.
+
+
